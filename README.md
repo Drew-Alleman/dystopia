@@ -11,7 +11,6 @@ Low to medium Ubuntu Core honeypot coded in Python.
 # Todo
 * Packet Capture
 * Better Logging
-* Add more commands (Push towards being a ubuntu core IoT honeypot)
 * Service
 * Geolocation 
 * Email Alerts 
