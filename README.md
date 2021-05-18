@@ -19,9 +19,10 @@ Low to medium Ubuntu Core honeypot coded in Python.
 * Optimize / Fix Code
 
 # How to run
+```
 sudo apt update && sudo apt upgrade -y
 python3 dystopy.py
-
+```
 # Command Line Arguments 
 ```
 usage: dystopia.py [-h] [--port PORT] [--motd MOTD] [--max MAX] [--username USERNAME] [--password PASSWORD]
