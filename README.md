@@ -19,7 +19,7 @@ Low to medium Ubuntu Core honeypot coded in Python.
 * Optimize / Fix Code
 
 # How to run
-```
+```bash
 sudo apt update && sudo apt upgrade -y
 python3 dystopy.py
 ```
