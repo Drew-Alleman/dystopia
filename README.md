@@ -9,7 +9,6 @@ Low to medium Ubuntu Core honeypot coded in Python.
 * Add support to a plethora of commands
 
 # Todo
-* Packet Capture
 * Better Logging
 * Service
 * Geolocation 
