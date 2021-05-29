@@ -3,15 +3,4 @@
         "Failed Logins": 10,
         "Correct Logins": 0,
         "Times Connected": 0
-    },
-    "192.168.0.223": {
-        "Failed Logins": 10,
-        "Correct Logins": 2,
-        "Times Connected": 16
-    },
-    "192.168.0.131": {
-        "Failed Logins": 10,
-        "Correct Logins": 6,
-        "Times Connected": 16
-    }
-}
+   }
