@@ -1,10 +1,12 @@
+import os
 import json
+from json import JSONDecodeError
 import socket
 import logging
 from colorama import Fore
 from datetime import datetime
 
-logging.basicConfig(filename="dystopia.log", encoding="utf-8", level=logging.INFO, format="%(asctime)s:%(message)s")
+logging.basicConfig(filename="dystopia.log", encoding="utf-8", level=logging.INFO, format="%(asctime)s:%(threadName)s:%(message)s")
 
 class DisplayStatistics:
     def __init__(self):
@@ -91,7 +93,7 @@ def writeJsonToFile(jsonData, fileName):
     if fileName.endswith(".json") == False:
         fileName = fileName + ".json"
         with open(fileName, "a+") as outFile:
-            data = json.load(fileName)
+            data = json.loads(fileName)
             outFile.seek(0)
             data.update(jsonData)
 
@@ -113,10 +115,13 @@ def writeToBlacklist(clientIPAddress):
 def readJsonFile(fileName):
     if fileName is None:
         printError("file was not found!")
+        quit()
     try:
         with open(fileName, "r") as outFile:
             data = json.load(outFile)
         return data
+    except JSONDecodeError:
+        printError("JSONDecodeError in thread ")
     except FileNotFoundError:
         printError("file: '{}' was not found.".format(fileName))
         quit()
@@ -137,7 +142,6 @@ def yn(message):
             quit()
     except KeyboardInterrupt:
         quit()
-
 
 def formatString(s):
     s = s.decode().strip()
