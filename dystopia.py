@@ -146,7 +146,7 @@ class Honeypot:
         elif command == "pwd":
             response = b"/home/" + self.username.encode() + b"/\n"
         elif command == "hostname":
-            response = self.hostname.encode() + b"/\n"
+            response = self.hostname.encode() + b"\n"
         elif command == "exit":
             connection.shutdown(1)
         elif "cd" in command:
