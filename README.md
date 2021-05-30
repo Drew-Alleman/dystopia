@@ -2,8 +2,9 @@
 Low to medium Ubuntu Core honeypot coded in Python.
 ![preview](/media/preview.PNG)
 # Features
-* Optional Login Prompt
-* Logs commands used and IP addresses
+* Optional login prompt
+* Logs who connects and what they do
+* Capture session to pcap file
 * Customize MOTD, Port, Hostname and how many clients can connect at once (default is unlimited)
 * Save and load config
 * Add support to a plethora of commands
