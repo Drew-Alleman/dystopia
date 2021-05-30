@@ -1,8 +1,9 @@
 {
    "curl":"curl: try 'curl --help' or 'curl --manual' for more information\n",
-   "python --version":"Python 3.8.5\n",
+   "python3 --version":"Python 3.8.5\n",
    "perl --version":"This is perl 5, version 26, subversion 1 (v5.26.1) built for x86_64-linux-gnu-thread-multi (with 71 registered patches, see perl -V for more detail) Copyright 1987-2017, Larry Wall Perl may be copied only under the terms of either the Artistic License or the GNU General Public License, which may be found in the Perl 5 source kit. Complete documentation for Perl, including FAQ lists, should be found on this system using \"man perl\" or \"perldoc perl\".  If you have access to the Internet, point your browser at http://www.perl.org/, the Perl Home Page.\n",
    "perl":"\n",
+   "python3":"\n",
    "wget":"wget: missing URL\nUsage: wget [OPTION]... [URL]...\n\nTry `wget --help' for more options.\n",
    "ls":"db records user.txt\n",
    "sudo":"usage: sudo -h | -K | -k | -V\nusage: sudo -v [-AknS] [-g group] [-h host] [-p prompt] [-u user]\nusage: sudo -l [-AknS] [-g group] [-h host] [-p prompt] [-U user] [-u user] [command]\nusage: sudo [-AbEHknPS] [-r role] [-t type] [-C num] [-D directory] [-g group] [-h host] [-p prompt] [-R\n            directory] [-T timeout] [-u user] [VAR=value] [-i|-s] [<command>]\nusage: sudo -e [-AknS] [-r role] [-t type] [-C num] [-D directory] [-g group] [-h host] [-p prompt] [-R directory]\n            [-T timeout] [-u user] file ...\n",
