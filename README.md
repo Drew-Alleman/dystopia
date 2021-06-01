@@ -1,6 +1,13 @@
 # Dystopia
 Low to medium Ubuntu Core honeypot coded in Python.
 ![preview](/media/preview.PNG)
+
+#Quick Guide
+- [Installation](#Installation)
+- [Arguments](#Arguments)
+- [dstat](#dstat)
+
+
 # Features
 * Optional login prompt
 * Logs who connects and what they do
@@ -19,7 +26,7 @@ Low to medium Ubuntu Core honeypot coded in Python.
 * Add Default Configurations 
 * Optimize / Fix Code
 
-# How to run
+# Installation
 ```
 chmod 755 setup.sh
 ./setup.sh
@@ -44,7 +51,7 @@ Net Upgrade Size:      0.00 MiB
 
 python3 dystopy.py
 ```
-# Command Line Arguments 
+# Arguments 
 ```
 usage: dystopia.py [-h] [--host HOST] [--port PORT] [--motd MOTD] [--max MAX]
                    [--login] [--username USERNAME] [--password PASSWORD]
@@ -91,3 +98,33 @@ for eg <br>
 }
 ```
 ![example](/media/dog.png)
+
+# dstat
+## How To Run
+```
+cd tools/
+chmod 755 dstat.py
+./dstat.py --report -f report.html
++---------------+-----------------+---------------+----------------+
+|   IP Address  | Times Connected | Failed Logins | Correct Logins |
++---------------+-----------------+---------------+----------------+
+| 192.168.0.239 |        22345    |      1231     |      2         |
+| 192.168.0.223 |      546646     |     27531     |      53        |
++---------------+-----------------+---------------+----------------+
+```
+## Arguments
+```
+usage: dstat.py [-h] [--address ADDRESS] [--report] [--sort SORT]
+                [--filename FILENAME]
+
+dstat | Statistics tool for Dystopia
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --address ADDRESS, -a ADDRESS
+                        ip address to investigate
+  --report, -r          show a general report
+  --sort SORT, -s SORT  sort the report table by row name
+  --filename FILENAME, -f FILENAME
+                        Filename of report file
+```

@@ -1,5 +1,13 @@
 #!/usr/bin/python3
+from core.utilities import *
+import threading
+import argparse
+import textwrap
+import socket
+import json
 import sys
+import os
+import re
 
 VERSION = "1.0.8"
 # Check for python3
@@ -7,66 +15,58 @@ if int(sys.version[0]) < 3:
     print("[-] Please use python 3>")
     exit()
 
-from core.utilities import *
-import threading
-import argparse
-import textwrap
-import socket
-import json
-import os
-
-globalLock = threading.Lock()
+global_lock = threading.Lock()
 
 
 class Statistics:
-    def __init__(self, clientAddress):
-        self.address = clientAddress[0]
+    def __init__(self, socket_address):
+        self.address = socket_address[0]
         self.dir = "/var/log/dystopia/statistics.json"
         if not Statistics.load(self):
-            self.failedLogins = 0
-            self.correctLogins = 0
-            self.seen = 0
+            self.failed_logins = 0
+            self.correct_logins = 0
+            self.count = 0
 
     def save(self):
-        with globalLock:
+        with global_lock:
             with open(self.dir, "r") as jsonFile:
                 data = json.load(jsonFile)
                 try:
-                    data[self.address]["Failed Logins"] = self.failedLogins
-                    data[self.address]["Correct Logins"] = self.correctLogins
-                    data[self.seen]["Times Connected"] = self.seen
+                    data[self.address]["Failed Logins"] = self.failed_logins
+                    data[self.address]["Correct Logins"] = self.correct_logins
+                    data[self.count]["Times Connected"] = self.count
                 except KeyError:
-                    newData = (
+                    new_data = (
                         '{"'
                         + self.address
                         + '":{"Failed Logins":'
-                        + str(self.failedLogins)
+                        + str(self.failed_logins)
                         + ',"Correct Logins":'
-                        + str(self.correctLogins)
+                        + str(self.correct_logins)
                         + ', "Times Connected":'
-                        + str(self.seen)
+                        + str(self.count)
                         + "}}"
                     )
-                    jsonData = json.loads(newData)
-                    data.update(jsonData)
+                    json_data = json.loads(new_data)
+                    data.update(json_data)
             with open(self.dir, "w") as jsonFile:
                 json.dump(data, jsonFile, indent=4, ensure_ascii=False)
 
-    def increaseFailedLogin(self):
-        self.failedLogins += 1
+    def increase_failed_login(self):
+        self.failed_logins += 1
 
-    def increaseCorrectLogins(self):
-        self.correctLogins += 1
+    def increase_correct_logins(self):
+        self.correct_logins += 1
 
-    def increaseSeenCount(self):
-        self.seen += 1
+    def increase_view_count(self):
+        self.count += 1
 
     def load(self):
-        stats = readJsonFile(self.dir)
+        stats = read_json_file(self.dir)
         try:
-            self.failedLogins = stats[self.address]["Failed Logins"]
-            self.correctLogins = stats[self.address]["Correct Logins"]
-            self.seen = stats[self.address]["Times Connected"]
+            self.failed_logins = stats[self.address]["Failed Logins"]
+            self.correct_logins = stats[self.address]["Correct Logins"]
+            self.count = stats[self.address]["Times Connected"]
             return True
         except KeyError:  # If information is not found.
             return False
@@ -87,7 +87,7 @@ class Honeypot:
             self.capture = args.capture
             self.interface = args.interface
         else:  # Load config
-            Honeypot.loadConfig(self, args.load)
+            Honeypot.load_config(self, args.load)
 
         if self.localhost:
             self.ipaddress = "127.0.0.1"
@@ -95,13 +95,13 @@ class Honeypot:
             self.ipaddress = args.host
 
         if self.max != 0:
-            printMessage("Max clients allowed: " + str(self.max))
+            print_message("Max clients allowed: " + str(self.max))
         if args.save:
-            Honeypot.exportConfig(self)
+            Honeypot.export_config(self)
 
         self.clientList = []  # List for clients CURRENTLY connected.
         self.IPList = []  # List for all clients that connected in a session.
-        self.commands = readJsonFile("commands.json")
+        self.commands = read_json_file("commands.json")
         self.prompt = (
             self.username.strip().encode()
             + b"@"
@@ -121,35 +121,35 @@ class Honeypot:
                 + textwrap.shorten(self.motd, 35)
             )
             self.sock.bind((self.ipaddress, self.port))
-            printMessage(message)
+            print_message(message)
             if args.capture:
-                Honeypot.capturePot(self)
+                Honeypot.capture_session(self)
         except PermissionError:
-            printError("Please run 'dystopia.py' as root")
+            print_error("Please run 'dystopia.py' as root")
             exit()
         except OSError as e:
-            printError(str(e))
+            print_error(str(e))
             exit()
 
-    def handleClient(self, connection, clientAddress):
-        stats = Statistics(clientAddress)
+    def handle_client(self, connection, socket_address):
+        stats = Statistics(socket_address)
         Statistics.load(stats)
-        Statistics.increaseSeenCount(stats)
+        Statistics.increase_view_count(stats)
         if self.fake:
-            while not Honeypot.login(self, connection, clientAddress):
-                Statistics.increaseFailedLogin(stats)
+            while not Honeypot.login(self, connection, socket_address):
+                Statistics.increase_failed_login(stats)
                 Statistics.save(stats)
             else:
-                Statistics.increaseCorrectLogins(stats)
-        connection.sendto(self.motd.encode() + b"\n", clientAddress)  # Send MOTD
+                Statistics.increase_correct_logins(stats)
+        connection.sendto(self.motd.encode() + b"\n", socket_address)  # Send MOTD
         while True:
             try:
-                connection.sendto(self.prompt, clientAddress)
-                data = formatString(connection.recv(1024))
-                if isDataValid(data):  # if data is valid
-                    Honeypot.commandResponse(self, connection, clientAddress, data)
-                    printMessage(
-                        "client " + clientAddress[0] + " tried command " + data
+                connection.sendto(self.prompt, socket_address)
+                data = format_string(connection.recv(1024))
+                if is_data_valid(data):  # if data is valid
+                    Honeypot.command_response(self, connection, socket_address, data)
+                    print_message(
+                        "client " + socket_address[0] + " tried command " + data
                     )
             # If connection is dropped / lost then break from loop and remove client from the client list
             except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
@@ -157,15 +157,15 @@ class Honeypot:
             except UnicodeDecodeError:  # Telnet Error ???
                 pass
 
-        printWarning(clientAddress[0] + " disconnected!")
+        print_warning(socket_address[0] + " disconnected!")
         Statistics.save(stats)
         self.clientList.remove(
-            clientAddress[0]
+            socket_address[0]
         )  # clientList is for only ACTIVE clients
 
-    def commandResponse(self, connection, clientAddress, command):
+    def command_response(self, connection, socket_address, command):
         response = None
-        Honeypot.findUrls(self, command, clientAddress)
+        Honeypot.find_urls(self, command, socket_address)
         if "sudo" in command and command != "sudo":  # No sudo for you!
             response = (
                 self.username.encode()
@@ -182,37 +182,39 @@ class Honeypot:
         elif "wget" in command and "wget" != command:
             response = b"\n\n"
         elif "cd" in command:
-            dir = command.split()
-            if len(dir) > 1:
-                response = b"cd: " + dir[1].encode() + b": No such file or directory\n"
+            directory = command.split()
+            if len(directory) > 1:
+                response = (
+                    b"cd: " + directory[1].encode() + b": No such file or directory\n"
+                )
         else:  # If command is unknown
             try:  # Try to see if it is in the commands.json file
                 response = self.commands[command].encode()
             except KeyError:  # if it is not
                 command = command.split()  # Split command by spaces
                 response = b"bash: " + command[0].encode() + b": command not found\n"
-        if response != None:
-            connection.sendto(response, clientAddress)
+        if response is not None:
+            connection.sendto(response, socket_address)
 
-    def login(self, connection, clientAddress):
+    def login(self, connection, socket_address):
         try:
-            connection.sendto(b"Login: ", clientAddress)
+            connection.sendto(b"Login: ", socket_address)
             username = connection.recv(1024)
-            connection.sendto(b"Password: ", clientAddress)
+            connection.sendto(b"Password: ", socket_address)
             password = connection.recv(1024)
-            username = formatString(username)
-            password = formatString(password)
+            username = format_string(username)
+            password = format_string(password)
             if username == self.username and password == self.password:
-                printMessage(
+                print_message(
                     "client "
-                    + clientAddress[0]
+                    + socket_address[0]
                     + " logged in ({0}:{1})".format(username, password)
                 )
                 return True
-            connection.sendto(b"\nLogin incorrect\n", clientAddress)
-            printError(
+            connection.sendto(b"\nLogin incorrect\n", socket_address)
+            print_error(
                 "client "
-                + clientAddress[0]
+                + socket_address[0]
                 + " tried {0}:{1}".format(username, password)
             )
             return False
@@ -221,36 +223,36 @@ class Honeypot:
             return False
         except UnicodeDecodeError:
             # resend
-            Honeypot.handleClient(self, connection, clientAddress)
+            Honeypot.handle_client(self, connection, socket_address)
 
-    def checkClientLimit(self):
+    def check_client_limit(self):
         if self.max != 0:
             if len(self.clientList) >= int(self.max):
                 return True
         return False
 
     def listen(self):
-        if Honeypot.checkClientLimit(self):
+        if Honeypot.check_client_limit(self):
             return
         self.sock.listen(1)
-        connection, clientAddress = self.sock.accept()
-        printMessage(clientAddress[0] + " connected.")
-        self.clientList.append(clientAddress[0])  # Add connected client to client list
-        if clientAddress[0] not in self.IPList:
-            self.IPList.append(clientAddress[0])
-        logConnector(clientAddress[0] + "\n")
+        connection, socket_address = self.sock.accept()
+        print_message(socket_address[0] + " connected.")
+        self.clientList.append(socket_address[0])  # Add connected client to client list
+        if socket_address[0] not in self.IPList:
+            self.IPList.append(socket_address[0])
+        log_connector(socket_address[0] + "\n")
         t = threading.Thread(
-            target=Honeypot.handleClient, args=(self, connection, clientAddress)
+            target=Honeypot.handle_client, args=(self, connection, socket_address)
         )  # Start thread to handle the connection
         t.daemon = True
         t.start()  # Start thread
 
-    def capturePot(self):
+    def capture_session(self):
         now = datetime.now()
         filename = now.strftime("%d-%m-%y-%H-%M-%S.pcap")
         os.system("tcpdump -i " + self.interface + " -w sessions/" + filename + " &")
 
-    def exportConfig(self):
+    def export_config(self):
         j = {
             "IP": self.ipaddress,
             "port": self.port,
@@ -265,13 +267,13 @@ class Honeypot:
             "interface": self.interface,
             "autodownload": self.autoDownload,
         }
-        jsonSettings = json.dumps(j)  # Parse python dict to JSON
-        jsonSettingsObj = json.loads(jsonSettings)  # Load as JSON object
+        json_settings = json.dumps(j)  # Parse python dict to JSON
+        json_settings_obj = json.loads(json_settings)  # Load as JSON object
         with open(args.save, "a") as outFile:
-            json.dump(jsonSettingsObj, outFile)
+            json.dump(json_settings_obj, outFile)
 
-    def loadConfig(self, fileName):
-        config = readJsonFile(fileName)
+    def load_config(self, filename):
+        config = read_json_file(filename)
         self.ipaddress = config["IP"]
         self.port = config["port"]
         self.motd = config["motd"]
@@ -285,24 +287,43 @@ class Honeypot:
         self.interface = config["interface"]
         self.autoDownload = config["autodownload"]
 
-    def findUrls(self, data, clientAddress):
-        URL_REGEX = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))"""
-        links = re.findall(URL_REGEX, data)
+    def find_urls(self, data, socket_address):
+        url_regex = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](
+        ?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad
+        |ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca
+        |cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk
+        |fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir
+        |is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml
+        |mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn
+        |pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td
+        |tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw
+        )/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s(
+        )]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](
+        ?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad
+        |ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca
+        |cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk
+        |fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir
+        |is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml
+        |mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn
+        |pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td
+        |tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw
+        )\b/?(?!@))) """
+        links = re.findall(url_regex, data)
         if self.autoDownload:
             for link in links:
                 os.system("wget -q -P Loot/ " + link + "")
-                printMessage("Saved Link: " + link)
+                print_message("Saved Link: " + link)
         else:
             for link in links:
-                printMessage(clientAddress[0] + " tried to access: " + link)
+                print_message(socket_address[0] + " tried to access: " + link)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dystopia | A python Honeypot.")
     parser.add_argument(
         "--host",
-        help="IP Address to host the Honeypot. Default: " + getIP(),
-        default=getIP(),
+        help="IP Address to host the Honeypot. Default: " + get_ip(),
+        default=get_ip(),
     )
     parser.add_argument(
         "--port", "-P", help="specify a port to bind to", default=23, type=int
@@ -368,7 +389,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--interface",
         "-i",
-        help="interface to capture traffic on if --capture / -c is used and no interface is configured, the default is: 'eth0'",
+        help="interface to capture traffic on if --capture / -c is used and no interface is configured, the default "
+        "is: 'eth0'",
         default="eth0",
     )
     parser.add_argument(
@@ -394,10 +416,10 @@ if __name__ == "__main__":
     if args.version:
         print(VERSION)
         exit()
-    printBanner()
+    print_banner()
     s = Honeypot()
     Honeypot.bind(s)
-    printMessage("Waiting for connections...")
+    print_message("Waiting for connections...")
     while True:
         try:
             Honeypot.listen(s)

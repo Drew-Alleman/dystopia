@@ -1,5 +1,3 @@
-import re
-import os
 import json
 from json import JSONDecodeError
 import socket
@@ -9,7 +7,6 @@ from datetime import datetime
 
 logging.basicConfig(
     filename="dystopia.log",
-    encoding="utf-8",
     level=logging.INFO,
     format="%(asctime)s:%(threadName)s:%(message)s",
 )
@@ -17,37 +14,37 @@ logging.basicConfig(
 
 class DisplayStatistics:
     def __init__(self):
-        self.stats = readJsonFile("/var/log/dystopia/statistics.json")
+        self.stats = read_json_file("/var/log/dystopia/statistics.json")
         self.ips = []
         for ip, stat in self.stats.items():
             self.ips.append(ip)
 
-    def getTopConnector(self):
-        timesConnected = []
+    def get_top_connector(self):
+        times_connected = []
         for ip in self.ips:
-            timesConnected.append(self.stats[ip]["Times Connected"])
-        maxTimesConnected = max(timesConnected)
-        index = timesConnected.index(maxTimesConnected)
-        if maxTimesConnected == 0:
-            return ("N/A", "N/A")
-        return (self.ips[index], maxTimesConnected)
+            times_connected.append(self.stats[ip]["Times Connected"])
+        max_times_connected = max(times_connected)
+        index = times_connected.index(max_times_connected)
+        if max_times_connected == 0:
+            return "N/A", "N/A"
+        return self.ips[index], max_times_connected
 
-    def getMostLoginAttempts(self):
-        failedLogins = []
+    def get_most_login_attempts(self):
+        failed_logins = []
         for ip in self.ips:
-            failedLogins.append(self.stats[ip]["Failed Logins"])
-        topAttacker = max(failedLogins)
-        index = failedLogins.index(topAttacker)
-        if topAttacker == 0:
-            return ("N/A", "N/A")
-        return (self.ips[index], topAttacker)
+            failed_logins.append(self.stats[ip]["Failed Logins"])
+        top_attacker = max(failed_logins)
+        index = failed_logins.index(top_attacker)
+        if top_attacker == 0:
+            return "N/A", "N/A"
+        return self.ips[index], top_attacker
 
 
-def printBanner():
+def print_banner():
     display = DisplayStatistics()
-    topLogin = DisplayStatistics.getMostLoginAttempts(display)
-    topConnector = DisplayStatistics.getTopConnector(display)
-    bannerArt = """{2}
+    top_login = DisplayStatistics.get_most_login_attempts(display)
+    top_connector = DisplayStatistics.get_top_connector(display)
+    banner_art = """{2}
     :::::::-. .-:.     ::-. .::::::.::::::::::::   ...   ::::::::::. :::  :::.     
      ;;,   `';,';;.   ;;;;';;;`    `;;;;;;;;''''.;;;;;;;. `;;;```.;;;;;;  ;;`;;    
      `[[     [[  '[[,[[['  '[==/[[[[,    [[    ,[[     \\[[,`]]nnn]]' [[[ ,[[ '[[,  
@@ -63,39 +60,36 @@ def printBanner():
         Fore.WHITE,
         Fore.LIGHTBLUE_EX,
         Fore.YELLOW,
-        topConnector[0],
-        topConnector[1],
-        topLogin[0],
-        topLogin[1],
+        top_connector[0],
+        top_connector[1],
+        top_login[0],
+        top_login[1],
     )
-    print(bannerArt)
+    print(banner_art)
 
 
-def getTime():
+def get_time():
     now = datetime.now()  # Get time
-    prettyTime = now.strftime("[%H:%M:%S] ")  # Format time
-    return prettyTime
+    pretty_time = now.strftime("[%H:%M:%S] ")  # Format time
+    return pretty_time
 
 
-def printMessage(message):
-    cTime = getTime()
-    print(Fore.GREEN + cTime + Fore.WHITE + message)
+def print_message(message):
+    print(Fore.GREEN + get_time() + Fore.WHITE + message)
     logging.info(message)
 
 
-def printError(message):
-    cTime = getTime()
-    print(Fore.RED + cTime + Fore.WHITE + message)
+def print_error(message):
+    print(Fore.RED + get_time() + Fore.WHITE + message)
     logging.error(message)
 
 
-def printWarning(message):
-    cTime = getTime()
-    print(Fore.YELLOW + cTime + Fore.WHITE + message)
+def print_warning(message):
+    print(Fore.YELLOW + get_time() + Fore.WHITE + message)
     logging.warning(message)
 
 
-def getIP():
+def get_ip():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.connect(("8.8.8.8", 80))
     ipaddress = sock.getsockname()[0]
@@ -103,52 +97,43 @@ def getIP():
     return ipaddress
 
 
-def writeJsonToFile(jsonData, filename):
-    if filename.endswith(".json") == False:
-        filename = filename + ".json"
-        with open(filename, "a+") as outFile:
-            data = json.loads(filename)
-            outFile.seek(0)
-            data.update(jsonData)
-
-
-def isDataValid(data):
+def is_data_valid(data):
     if data is None or len(data) == 0:
         return False
     return True
 
 
-def logConnector(clientIPAddress):
-    dir = "/var/log/dystopia/connections.txt"
-    ips = getFileContent(dir)
+def log_connector(ip_address):
+    directory = "/var/log/dystopia/connections.txt"
+    ips = get_file_content(directory)
     ips = [ip.strip() for ip in ips]
-    if clientIPAddress.strip() not in ips:
-        with open(dir, "a+") as f:
-            f.write(clientIPAddress)
+    if ip_address.strip() not in ips:
+        with open(directory, "a+") as f:
+            f.write(ip_address)
 
 
-def readJsonFile(filename):
+def read_json_file(filename):
     if filename is None:
-        printError("file was not found!")
+        print_error("file was not found!")
         exit()
     try:
         with open(filename, "r") as outFile:
             data = json.load(outFile)
         return data
     except JSONDecodeError:
-        printError("JSONDecodeError in thread ")
+        print_error("JSONDecodeError in thread ")
     except FileNotFoundError:
-        printError("file: '{}' was not found.".format(filename))
+        print_error("file: '{}' was not found.".format(filename))
         exit()
 
 
-def getFileContent(filename):
+def get_file_content(filename):
     with open(filename, "r") as f:
         content = f.readlines()
     return content
 
 
-def formatString(s):
+def format_string(s):
     s = s.decode().strip()
     if s.endswith("\x00"):
         s = s[:-2]

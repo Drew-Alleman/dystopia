@@ -37,6 +37,7 @@ fi
 install_pips() {
 	info_print "Installing required python packages."
 	pip install -r requirements.txt
+	pip install prettytable
 }
 
 create_dirs_and_files() {
