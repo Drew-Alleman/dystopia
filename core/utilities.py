@@ -3,7 +3,6 @@ import os
 import json
 from json import JSONDecodeError
 import socket
-import urllib.request
 import logging
 from colorama import Fore
 from datetime import datetime
