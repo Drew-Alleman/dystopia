@@ -21,6 +21,7 @@ Low to medium Ubuntu Core honeypot coded in Python.
 
 # How to run
 ```bash
+chmod 755 setup.sh
 sudo ./setup.sh
 [+] Tcpdump is used to capture dystopia sessions!
 [+] Would you like to install 'Tcpdump'? [Y/n] y
