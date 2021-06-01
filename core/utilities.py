@@ -3,6 +3,7 @@ import os
 import json
 from json import JSONDecodeError
 import socket
+import urllib.request
 import logging
 from colorama import Fore
 from datetime import datetime
@@ -17,7 +18,7 @@ logging.basicConfig(
 
 class DisplayStatistics:
     def __init__(self):
-        self.stats = readJsonFile("stats.json")
+        self.stats = readJsonFile("/var/log/dystopia/statistics.json")
         self.ips = []
         for ip, stat in self.stats.items():
             self.ips.append(ip)
@@ -103,11 +104,11 @@ def getIP():
     return ipaddress
 
 
-def writeJsonToFile(jsonData, fileName):
-    if fileName.endswith(".json") == False:
-        fileName = fileName + ".json"
-        with open(fileName, "a+") as outFile:
-            data = json.loads(fileName)
+def writeJsonToFile(jsonData, filename):
+    if filename.endswith(".json") == False:
+        filename = filename + ".json"
+        with open(filename, "a+") as outFile:
+            data = json.loads(filename)
             outFile.seek(0)
             data.update(jsonData)
 
@@ -118,45 +119,34 @@ def isDataValid(data):
     return True
 
 
-def writeToBlacklist(clientIPAddress):
-    with open("blacklist.txt", "a+") as f:
-        ips = f.readlines()
-        ips = [ip.strip() for ip in ips]
-        if clientIPAddress not in ips:
+def logConnector(clientIPAddress):
+    dir = "/var/log/dystopia/connections.txt"
+    ips = getFileContent(dir)
+    ips = [ip.strip() for ip in ips]
+    if clientIPAddress.strip() not in ips:
+        with open(dir, "a+") as f:
             f.write(clientIPAddress)
 
 
-def readJsonFile(fileName):
-    if fileName is None:
+def readJsonFile(filename):
+    if filename is None:
         printError("file was not found!")
-        quit()
+        exit()
     try:
-        with open(fileName, "r") as outFile:
+        with open(filename, "r") as outFile:
             data = json.load(outFile)
         return data
     except JSONDecodeError:
         printError("JSONDecodeError in thread ")
     except FileNotFoundError:
-        printError("file: '{}' was not found.".format(fileName))
-        quit()
+        printError("file: '{}' was not found.".format(filename))
+        exit()
 
-def yn(message):
-    try:
-        prompt = (
-            Fore.GREEN + " y" + Fore.WHITE + "/" + Fore.RED + "n" + Fore.WHITE + ": "
-        )
-        yes = ["y", "Y", "YES", "yes"]
-        no = ["n", "N", "NO", "no"]
-        choice = input(Fore.YELLOW + "[?] " + Fore.WHITE + message + prompt)
-        if choice in yes:
-            return True
-        elif choice in no:
-            return False
-        else:
-            printError(choice + " ??")
-            quit()
-    except KeyboardInterrupt:
-        quit()
+
+def getFileContent(filename):
+    with open(filename, "r") as f:
+        content = f.readlines()
+    return content
 
 
 def formatString(s):

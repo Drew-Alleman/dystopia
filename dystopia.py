@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 import sys
 
+VERSION = "1.0.8"
 # Check for python3
 if int(sys.version[0]) < 3:
     print("[-] Please use python 3>")
-    quit()
+    exit()
+
 from core.utilities import *
 import threading
 import argparse
@@ -19,6 +21,7 @@ globalLock = threading.Lock()
 class Statistics:
     def __init__(self, clientAddress):
         self.address = clientAddress[0]
+        self.dir = "/var/log/dystopia/statistics.json"
         if not Statistics.load(self):
             self.failedLogins = 0
             self.correctLogins = 0
@@ -26,7 +29,7 @@ class Statistics:
 
     def save(self):
         with globalLock:
-            with open("stats.json", "r") as jsonFile:
+            with open(self.dir, "r") as jsonFile:
                 data = json.load(jsonFile)
                 try:
                     data[self.address]["Failed Logins"] = self.failedLogins
@@ -46,7 +49,7 @@ class Statistics:
                     )
                     jsonData = json.loads(newData)
                     data.update(jsonData)
-            with open("stats.json", "w") as jsonFile:
+            with open(self.dir, "w") as jsonFile:
                 json.dump(data, jsonFile, indent=4, ensure_ascii=False)
 
     def increaseFailedLogin(self):
@@ -59,7 +62,7 @@ class Statistics:
         self.seen += 1
 
     def load(self):
-        stats = readJsonFile("stats.json")
+        stats = readJsonFile(self.dir)
         try:
             self.failedLogins = stats[self.address]["Failed Logins"]
             self.correctLogins = stats[self.address]["Correct Logins"]
@@ -89,7 +92,7 @@ class Honeypot:
         if self.localhost:
             self.ipaddress = "127.0.0.1"
         else:
-            self.ipaddress = getIP()
+            self.ipaddress = args.host
 
         if self.max != 0:
             printMessage("Max clients allowed: " + str(self.max))
@@ -123,10 +126,10 @@ class Honeypot:
                 Honeypot.capturePot(self)
         except PermissionError:
             printError("Please run 'dystopia.py' as root")
-            quit()
+            exit()
         except OSError as e:
             printError(str(e))
-            quit()
+            exit()
 
     def handleClient(self, connection, clientAddress):
         stats = Statistics(clientAddress)
@@ -235,7 +238,7 @@ class Honeypot:
         self.clientList.append(clientAddress[0])  # Add connected client to client list
         if clientAddress[0] not in self.IPList:
             self.IPList.append(clientAddress[0])
-            writeToBlacklist(clientAddress[0] + "\n")
+        logConnector(clientAddress[0] + "\n")
         t = threading.Thread(
             target=Honeypot.handleClient, args=(self, connection, clientAddress)
         )  # Start thread to handle the connection
@@ -249,6 +252,7 @@ class Honeypot:
 
     def exportConfig(self):
         j = {
+            "IP": self.ipaddress,
             "port": self.port,
             "motd": self.motd,
             "max": self.max,
@@ -259,7 +263,7 @@ class Honeypot:
             "localhost": self.localhost,
             "capture": self.capture,
             "interface": self.interface,
-            "autodownload":self.autoDownload
+            "autodownload": self.autoDownload,
         }
         jsonSettings = json.dumps(j)  # Parse python dict to JSON
         jsonSettingsObj = json.loads(jsonSettings)  # Load as JSON object
@@ -268,6 +272,7 @@ class Honeypot:
 
     def loadConfig(self, fileName):
         config = readJsonFile(fileName)
+        self.ipaddress = config["IP"]
         self.port = config["port"]
         self.motd = config["motd"]
         self.max = config["max"]
@@ -285,14 +290,20 @@ class Honeypot:
         links = re.findall(URL_REGEX, data)
         if self.autoDownload:
             for link in links:
-                os.system("wget -q -P Loot/ "+link + "")
-                printMessage("Saved Link: "+link)
+                os.system("wget -q -P Loot/ " + link + "")
+                printMessage("Saved Link: " + link)
         else:
             for link in links:
-                printMessage(clientAddress[0]+ " tried to access: " + link)
+                printMessage(clientAddress[0] + " tried to access: " + link)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dystopia | A python Honeypot.")
+    parser.add_argument(
+        "--host",
+        help="IP Address to host the Honeypot. Default: " + getIP(),
+        default=getIP(),
+    )
     parser.add_argument(
         "--port", "-P", help="specify a port to bind to", default=23, type=int
     )
@@ -367,9 +378,22 @@ if __name__ == "__main__":
         "--load", "-l", help="load config from a json file E.g '--load settings.json'"
     )
     parser.add_argument(
-        "--download", "-a", help="Automatically download links used by attackers", action="store_true", default=False
+        "--download",
+        "-a",
+        help="Automatically download links used by attackers",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "--version",
+        help="print version and exit",
+        action="store_true",
+        default=False,
     )
     args = parser.parse_args()
+    if args.version:
+        print(VERSION)
+        exit()
     printBanner()
     s = Honeypot()
     Honeypot.bind(s)

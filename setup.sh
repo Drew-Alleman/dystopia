@@ -14,7 +14,9 @@ warning_print() {
 	echo -e "\e[93m $1"
 }
 
+
 install_tcpdump() {
+info_print "Tcpdump is used to capture dystopia sessions!"
 echo -e -n "\e[32m[+]\e[0m Would you like to install 'Tcpdump'? [\e[33mY\e[0m/\e[31mn\e[0m] " 
 read response
 if [[ "$response" == "y"  ||  "$response" == "Y" ]]; then
@@ -28,8 +30,6 @@ if [[ "$response" == "y"  ||  "$response" == "Y" ]]; then
 	else
 		error_print "Desired Input: '1,2'"
 	fi
-else
-	error_print "Desired Input: Y/n"
 fi
 
 }
@@ -41,15 +41,13 @@ install_pips() {
 
 create_dirs_and_files() {
 	info_print "Creating needed directorys!"
-	mkdir Loot
-	mkdir sessions
-	touch blacklist.txt
+	mkdir -p Loot
+	mkdir -p sessions
+	sudo mkdir -p /var/log/dystopia
+	sudo mv statistics.json /var/log/dystopia/statistics.json
+	sudo touch /var/log/dystopia/connections.txt
 }
 
-if [ "$EUID" -ne 0 ]
-  then error_print "Please run as root"
-  exit
-fi
 
 install_pips
 install_tcpdump
