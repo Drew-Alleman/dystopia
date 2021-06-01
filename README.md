@@ -4,7 +4,8 @@ Low to medium Ubuntu Core honeypot coded in Python.
 # Features
 * Optional login prompt
 * Logs who connects and what they do
-* Capture session to pcap file
+* Capture session to pcap file 
+* Automatically download links used by attackers
 * Customize MOTD, Port, Hostname and how many clients can connect at once (default is unlimited)
 * Save and load config
 * Add support to a plethora of commands
@@ -20,7 +21,19 @@ Low to medium Ubuntu Core honeypot coded in Python.
 
 # How to run
 ```bash
-sudo apt update && sudo apt upgrade -y
+sudo ./setup.sh
+[+] Tcpdump is used to capture dystopia sessions!
+[+] Would you like to install 'Tcpdump'? [Y/n] y
+[+] 1 --> Install for Arch Linux
+[+] 2 --> Install for Debian Users
+1
+warning: tcpdump-4.99.0-1 is up to date -- reinstalling
+resolving dependencies...
+looking for conflicting packages...
+Packages (1) tcpdump-4.99.0-1
+
+[+] Creating needed directorys!
+
 python3 dystopy.py
 ```
 # Command Line Arguments 
@@ -29,6 +42,7 @@ usage: dystopia.py [-h] [--port PORT] [--motd MOTD] [--max MAX] [--login]
                    [--username USERNAME] [--password PASSWORD]
                    [--hostname HOSTNAME] [--localhost] [--capture]
                    [--interface INTERFACE] [--save SAVE] [--load LOAD]
+                   [--download]
 
 Dystopia | A python Honeypot.
 
@@ -55,6 +69,7 @@ optional arguments:
   --save SAVE, -s SAVE  save config to a json file E.g: '--save settings.json'
   --load LOAD, -l LOAD  load config from a json file E.g '--load
                         settings.json'
+  --download, -a        Automatically download links used by attackers
 ```
 # How to add Support for More Commands
 You can add support to new commands by editing the file "commands.json". The format is command:output <br>

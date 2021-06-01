@@ -1,4 +1,6 @@
+#!/usr/bin/python3
 import sys
+
 # Check for python3
 if int(sys.version[0]) < 3:
     print("[-] Please use python 3>")
@@ -31,16 +33,28 @@ class Statistics:
                     data[self.address]["Correct Logins"] = self.correctLogins
                     data[self.seen]["Times Connected"] = self.seen
                 except KeyError:
-                    newData = '{"'+self.address+'":{"Failed Logins":'+str(self.failedLogins)+',"Correct Logins":'+str(self.correctLogins)+', "Times Connected":'+str(self.seen)+'}}'
+                    newData = (
+                        '{"'
+                        + self.address
+                        + '":{"Failed Logins":'
+                        + str(self.failedLogins)
+                        + ',"Correct Logins":'
+                        + str(self.correctLogins)
+                        + ', "Times Connected":'
+                        + str(self.seen)
+                        + "}}"
+                    )
                     jsonData = json.loads(newData)
                     data.update(jsonData)
             with open("stats.json", "w") as jsonFile:
-                json.dump(data, jsonFile,indent=4,ensure_ascii=False)
+                json.dump(data, jsonFile, indent=4, ensure_ascii=False)
 
     def increaseFailedLogin(self):
         self.failedLogins += 1
+
     def increaseCorrectLogins(self):
         self.correctLogins += 1
+
     def increaseSeenCount(self):
         self.seen += 1
 
@@ -51,8 +65,9 @@ class Statistics:
             self.correctLogins = stats[self.address]["Correct Logins"]
             self.seen = stats[self.address]["Times Connected"]
             return True
-        except KeyError: # If information is not found.
+        except KeyError:  # If information is not found.
             return False
+
 
 class Honeypot:
     def __init__(self):
@@ -63,12 +78,12 @@ class Honeypot:
             self.fake = args.login
             self.hostname = args.hostname
             self.localhost = args.localhost
+            self.autoDownload = args.download
             self.username = args.username
             self.password = args.password
             self.capture = args.capture
             self.interface = args.interface
         else:  # Load config
-            print(args.load)
             Honeypot.loadConfig(self, args.load)
 
         if self.localhost:
@@ -84,21 +99,24 @@ class Honeypot:
         self.clientList = []  # List for clients CURRENTLY connected.
         self.IPList = []  # List for all clients that connected in a session.
         self.commands = readJsonFile("commands.json")
-        self.prompt = (self.username.strip().encode()
-                    + b"@"
-                    + self.hostname.strip().encode()
-                    + b":~$ ")
+        self.prompt = (
+            self.username.strip().encode()
+            + b"@"
+            + self.hostname.strip().encode()
+            + b":~$ "
+        )
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def bind(self):
         try:
-            message =(
-            "Created Honeypot @ "
-            + self.ipaddress
-            + ":"
-            + str(self.port)
-            + " the motd is "
-            + textwrap.shorten(self.motd, 35))
+            message = (
+                "Created Honeypot @ "
+                + self.ipaddress
+                + ":"
+                + str(self.port)
+                + " the motd is "
+                + textwrap.shorten(self.motd, 35)
+            )
             self.sock.bind((self.ipaddress, self.port))
             printMessage(message)
             if args.capture:
@@ -109,6 +127,7 @@ class Honeypot:
         except OSError as e:
             printError(str(e))
             quit()
+
     def handleClient(self, connection, clientAddress):
         stats = Statistics(clientAddress)
         Statistics.load(stats)
@@ -122,11 +141,13 @@ class Honeypot:
         connection.sendto(self.motd.encode() + b"\n", clientAddress)  # Send MOTD
         while True:
             try:
-                connection.sendto(self.prompt,clientAddress)
+                connection.sendto(self.prompt, clientAddress)
                 data = formatString(connection.recv(1024))
                 if isDataValid(data):  # if data is valid
                     Honeypot.commandResponse(self, connection, clientAddress, data)
-                    printMessage("client " + clientAddress[0] + " tried command " + data)
+                    printMessage(
+                        "client " + clientAddress[0] + " tried command " + data
+                    )
             # If connection is dropped / lost then break from loop and remove client from the client list
             except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
                 break
@@ -135,12 +156,18 @@ class Honeypot:
 
         printWarning(clientAddress[0] + " disconnected!")
         Statistics.save(stats)
-        self.clientList.remove(clientAddress[0])  # clientList is for only ACTIVE clients
+        self.clientList.remove(
+            clientAddress[0]
+        )  # clientList is for only ACTIVE clients
 
     def commandResponse(self, connection, clientAddress, command):
         response = None
+        Honeypot.findUrls(self, command, clientAddress)
         if "sudo" in command and command != "sudo":  # No sudo for you!
-            response = self.username.encode() + b" is not in the sudoers file. This incident will be reported.\n"
+            response = (
+                self.username.encode()
+                + b" is not in the sudoers file. This incident will be reported.\n"
+            )
         elif command == "whoami":
             response = self.username.encode() + b"\n"
         elif command == "pwd":
@@ -149,6 +176,8 @@ class Honeypot:
             response = self.hostname.encode() + b"\n"
         elif command == "exit":
             connection.shutdown(1)
+        elif "wget" in command and "wget" != command:
+            response = b"\n\n"
         elif "cd" in command:
             dir = command.split()
             if len(dir) > 1:
@@ -171,10 +200,18 @@ class Honeypot:
             username = formatString(username)
             password = formatString(password)
             if username == self.username and password == self.password:
-                printMessage("client "+ clientAddress[0] + " logged in ({0}:{1})".format(username, password))
+                printMessage(
+                    "client "
+                    + clientAddress[0]
+                    + " logged in ({0}:{1})".format(username, password)
+                )
                 return True
             connection.sendto(b"\nLogin incorrect\n", clientAddress)
-            printError("client " + clientAddress[0] + " tried {0}:{1}".format(username, password))
+            printError(
+                "client "
+                + clientAddress[0]
+                + " tried {0}:{1}".format(username, password)
+            )
             return False
             # If connection is dropped / lost
         except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
@@ -208,7 +245,7 @@ class Honeypot:
     def capturePot(self):
         now = datetime.now()
         filename = now.strftime("%d-%m-%y-%H-%M-%S.pcap")
-        os.system("tcpdump -i " + self.interface + " -w " + filename + " &")
+        os.system("tcpdump -i " + self.interface + " -w sessions/" + filename + " &")
 
     def exportConfig(self):
         j = {
@@ -222,6 +259,7 @@ class Honeypot:
             "localhost": self.localhost,
             "capture": self.capture,
             "interface": self.interface,
+            "autodownload":self.autoDownload
         }
         jsonSettings = json.dumps(j)  # Parse python dict to JSON
         jsonSettingsObj = json.loads(jsonSettings)  # Load as JSON object
@@ -240,53 +278,97 @@ class Honeypot:
         self.localhost = config["localhost"]
         self.capture = config["capture"]
         self.interface = config["interface"]
+        self.autoDownload = config["autodownload"]
+
+    def findUrls(self, data, clientAddress):
+        URL_REGEX = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))"""
+        links = re.findall(URL_REGEX, data)
+        if self.autoDownload:
+            for link in links:
+                os.system("wget -q -P Loot/ "+link + "")
+                printMessage("Saved Link: "+link)
+        else:
+            for link in links:
+                printMessage(clientAddress[0]+ " tried to access: " + link)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dystopia | A python Honeypot.")
     parser.add_argument(
-        "--port","-P", help="specify a port to bind to", default=23, type=int
+        "--port", "-P", help="specify a port to bind to", default=23, type=int
     )
     parser.add_argument(
-        "--motd", "-m",
+        "--motd",
+        "-m",
         help="specify the message of the day",
         default="Welcome to Ubuntu Core r18 (GNU/Linux 4.15.0-143-generic x86_64)\n* Ubuntu Core:     "
-                "https://www.ubuntu.com/core\n* Community:       https://forum.snapcraft.io\n* Snaps:           "
-                "https://snapcraft.io\nThis Ubuntu Core 18 machine is a tiny, transactional edition of Ubuntu,"
-                "\ndesigned for appliances, firmware and fixed-function VMs.\n\nIf all the software you care about is "
-                "available as snaps, you are in\nthe right place. If not, you will be more comfortable with "
-                "classic\ndeb-based Ubuntu Server or Desktop, where you can mix snaps with\ntraditional debs. It's a "
-                "brave new world here in Ubuntu Core!\n\nPlease see 'snap --help' for app installation and updates.\n",
+        "https://www.ubuntu.com/core\n* Community:       https://forum.snapcraft.io\n* Snaps:           "
+        "https://snapcraft.io\nThis Ubuntu Core 18 machine is a tiny, transactional edition of Ubuntu,"
+        "\ndesigned for appliances, firmware and fixed-function VMs.\n\nIf all the software you care about is "
+        "available as snaps, you are in\nthe right place. If not, you will be more comfortable with "
+        "classic\ndeb-based Ubuntu Server or Desktop, where you can mix snaps with\ntraditional debs. It's a "
+        "brave new world here in Ubuntu Core!\n\nPlease see 'snap --help' for app installation and updates.\n",
     )
     parser.add_argument(
-        "--max", "-M",
+        "--max",
+        "-M",
         help="max number of clients allowed to be connected at once default is unlimited",
         default=0,
         type=int,
     )
     parser.add_argument(
-        "--login","-f", help="create a fake login prompt (no encryption)", action="store_true", default=False
+        "--login",
+        "-f",
+        help="create a fake login prompt (no encryption)",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
-        "--username", "-u",
+        "--username",
+        "-u",
         help="username for fake login prompt and the user for the Honeypot session default: 'ubuntu'",
         default="ubuntu",
     )
     parser.add_argument(
-        "--password","-p", help="password for fake login prompt. Default: 'P@$$W0RD'", default="P@$$W0RD"
+        "--password",
+        "-p",
+        help="password for fake login prompt. Default: 'P@$$W0RD'",
+        default="P@$$W0RD",
     )
-    parser.add_argument("--hostname", "-H", help="Hostname of the Honeypot default: 'localhost'", default="localhost")
     parser.add_argument(
-        "--localhost", "-L",
+        "--hostname",
+        "-H",
+        help="Hostname of the Honeypot default: 'localhost'",
+        default="localhost",
+    )
+    parser.add_argument(
+        "--localhost",
+        "-L",
         help="start Honeypot on localhost",
         default=False,
         action="store_true",
     )
-    parser.add_argument("--capture", "-c", help="enable packet capturing using the tool Tcpdump", action="store_true", default=False)
     parser.add_argument(
-        "--interface", "-i", help="interface to capture traffic on if --capture / -c is used and no interface is configured, the default is: 'eth0'", default="eth0"
+        "--capture",
+        "-c",
+        help="enable packet capturing using the tool Tcpdump",
+        action="store_true",
+        default=False,
     )
-    parser.add_argument("--save", "-s", help="save config to a json file E.g: '--save settings.json'")
-    parser.add_argument("--load", "-l", help="load config from a json file E.g '--load settings.json'")
+    parser.add_argument(
+        "--interface",
+        "-i",
+        help="interface to capture traffic on if --capture / -c is used and no interface is configured, the default is: 'eth0'",
+        default="eth0",
+    )
+    parser.add_argument(
+        "--save", "-s", help="save config to a json file E.g: '--save settings.json'"
+    )
+    parser.add_argument(
+        "--load", "-l", help="load config from a json file E.g '--load settings.json'"
+    )
+    parser.add_argument(
+        "--download", "-a", help="Automatically download links used by attackers", action="store_true", default=False
+    )
     args = parser.parse_args()
     printBanner()
     s = Honeypot()

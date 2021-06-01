@@ -1,3 +1,4 @@
+import re
 import os
 import json
 from json import JSONDecodeError
@@ -6,7 +7,13 @@ import logging
 from colorama import Fore
 from datetime import datetime
 
-logging.basicConfig(filename="dystopia.log", encoding="utf-8", level=logging.INFO, format="%(asctime)s:%(threadName)s:%(message)s")
+logging.basicConfig(
+    filename="dystopia.log",
+    encoding="utf-8",
+    level=logging.INFO,
+    format="%(asctime)s:%(threadName)s:%(message)s",
+)
+
 
 class DisplayStatistics:
     def __init__(self):
@@ -20,7 +27,7 @@ class DisplayStatistics:
         for ip in self.ips:
             timesConnected.append(self.stats[ip]["Times Connected"])
         maxTimesConnected = max(timesConnected)
-        index =  timesConnected.index(maxTimesConnected)
+        index = timesConnected.index(maxTimesConnected)
         if maxTimesConnected == 0:
             return ("N/A", "N/A")
         return (self.ips[index], maxTimesConnected)
@@ -40,7 +47,7 @@ def printBanner():
     display = DisplayStatistics()
     topLogin = DisplayStatistics.getMostLoginAttempts(display)
     topConnector = DisplayStatistics.getTopConnector(display)
-    bannerArt = ("""{2}
+    bannerArt = """{2}
     :::::::-. .-:.     ::-. .::::::.::::::::::::   ...   ::::::::::. :::  :::.     
      ;;,   `';,';;.   ;;;;';;;`    `;;;;;;;;''''.;;;;;;;. `;;;```.;;;;;;  ;;`;;    
      `[[     [[  '[[,[[['  '[==/[[[[,    [[    ,[[     \\[[,`]]nnn]]' [[[ ,[[ '[[,  
@@ -50,10 +57,17 @@ def printBanner():
                   {3}[--]{1} {0}https://github.com/Drew-Alleman/dystopia    
                   {3}[--]{1} Top Connector: {0}{4} ({5})          
                   {3}[--]{1} Most Login Attempts: {0}{6} ({7}){1} 
+                  {3}[--]{1} All downloaded files go into the 'Loot' directory!
       """.format(
-        Fore.RED, Fore.WHITE, Fore.LIGHTBLUE_EX, Fore.YELLOW, topConnector[0], topConnector[1],topLogin[0], topLogin[1]
+        Fore.RED,
+        Fore.WHITE,
+        Fore.LIGHTBLUE_EX,
+        Fore.YELLOW,
+        topConnector[0],
+        topConnector[1],
+        topLogin[0],
+        topLogin[1],
     )
-)
     print(bannerArt)
 
 
@@ -126,12 +140,13 @@ def readJsonFile(fileName):
         printError("file: '{}' was not found.".format(fileName))
         quit()
 
-
 def yn(message):
     try:
-        prompt = Fore.GREEN + " y" + Fore.WHITE + "/" + Fore.RED + "n" + Fore.WHITE + ": " 
-        yes = ["y", "Y","YES", "yes"]
-        no = ["n", "N","NO", "no"]
+        prompt = (
+            Fore.GREEN + " y" + Fore.WHITE + "/" + Fore.RED + "n" + Fore.WHITE + ": "
+        )
+        yes = ["y", "Y", "YES", "yes"]
+        no = ["n", "N", "NO", "no"]
         choice = input(Fore.YELLOW + "[?] " + Fore.WHITE + message + prompt)
         if choice in yes:
             return True
@@ -142,6 +157,7 @@ def yn(message):
             quit()
     except KeyboardInterrupt:
         quit()
+
 
 def formatString(s):
     s = s.decode().strip()
