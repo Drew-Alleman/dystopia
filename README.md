@@ -2,7 +2,7 @@
 Low to medium Ubuntu Core honeypot coded in Python.
 ![preview](/media/preview.PNG)
 
-#Quick Guide
+# Quick Guide
 - [Installation](#Installation)
 - [Arguments](#Arguments)
 - [dstat](#dstat)
