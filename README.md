@@ -64,7 +64,7 @@ Dystopia | A python Honeypot.
 optional arguments:
   -h, --help            show this help message and exit
   --host HOST           IP Address to host the Honeypot. Default:
-                        192.168.0.223
+                        192.168.0.xxx
   --port PORT, -P PORT  specify a port to bind to
   --motd MOTD, -m MOTD  specify the message of the day
   --max MAX, -M MAX     max number of clients allowed to be connected at once
