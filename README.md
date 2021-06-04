@@ -114,7 +114,7 @@ chmod 755 dstat.py
 ```
 ## Arguments
 ```
-usage: dstat.py [-h] [--address ADDRESS] [--report] [--sort SORT]
+usage: dstat.py [-h] [--address ADDRESS] [--report] [--sort SORT] [--update]
                 [--filename FILENAME]
 
 dstat | Statistics tool for Dystopia
@@ -125,6 +125,8 @@ optional arguments:
                         ip address to investigate
   --report, -r          show a general report
   --sort SORT, -s SORT  sort the report table by row name
+  --update, -U          update geolocation entries
   --filename FILENAME, -f FILENAME
                         Filename of report file
+
 ```
