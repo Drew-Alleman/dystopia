@@ -47,6 +47,15 @@ create_dirs_and_files() {
 	sudo mkdir -p /var/log/dystopia
 	sudo mv statistics.json /var/log/dystopia/statistics.json
 	sudo touch /var/log/dystopia/connections.txt
+	echo -e -n "\e[32m[+]\e[0m Would you like to setup geolocation tracking via ipstack (free) [\e[33mY\e[0m/\e[31mn\e[0m] "
+	read response
+	if [[ "$response" == "y"  ||  "$response" == "Y" ]]; then
+		info_print "URL: https://ipstack.com/signup/free"
+		echo -e -n "\e[32m[+]\e[0m API KEY: "
+		read key
+		sudo echo $key > /var/log/dystopia/ipstack.key
+	fi
+
 }
 
 
