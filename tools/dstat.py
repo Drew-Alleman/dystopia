@@ -7,7 +7,6 @@ from prettytable import PrettyTable
 
 statistics = "/var/log/dystopia/statistics.json"
 
-
 def print_message(message):
     print(Fore.GREEN + "[*] " + Fore.WHITE + message)
 
@@ -100,10 +99,11 @@ class Statistics:
 
     def save(self):
         html = self.table.get_html_string()
-        if self.filename.endswith(".html"):
-            write_to_file(self.filename, html)
-        else:
-            self.filename = self.filename + ".html"
+        if self.filename is not None:
+            if self.filename.endswith(".html"):
+                write_to_file(self.filename, html)
+            else:
+                self.filename = self.filename + ".html"
 
 
 if __name__ == "__main__":
