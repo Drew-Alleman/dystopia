@@ -29,7 +29,7 @@ Low to medium Ubuntu Core honeypot coded in Python.
 # Installation
 ```
 chmod 755 setup.sh
-./setup.sh
+sudo ./setup.sh
 [+] Tcpdump is used to capture dystopia sessions!
 [+] Would you like to install 'Tcpdump'? [Y/n] y
 [+] 1 --> Install for Arch Linux
