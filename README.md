@@ -14,13 +14,13 @@ Low to medium Ubuntu Core honeypot coded in Python.
 * Capture session to pcap file 
 * Automatically download links used by attackers
 * Customize MOTD, Port, Hostname and how many clients can connect at once (default is unlimited)
+* Geolocation (with ipstack)
 * Save and load config
 * Add support to a plethora of commands
 
 # Todo
 * Better Logging
 * Service
-* Geolocation 
 * Email Alerts 
 * Insights such as charts & graphs 
 * Add Default Configurations 
