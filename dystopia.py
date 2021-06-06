@@ -9,7 +9,7 @@ import sys
 import os
 import re
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 # Check for python3
 if int(sys.version[0]) < 3:
     print("[-] Please use python 3>")
