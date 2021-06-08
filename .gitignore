@@ -1,0 +1,8 @@
+Loot/
+sessions/
+dystopia.logs
+LICENSE
+commands.json
+*/__pycache__
+statistics.json
+media/

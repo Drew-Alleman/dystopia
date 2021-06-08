@@ -61,14 +61,18 @@ def get_access_key():
 
 def get_geo_data(address):
     key = get_access_key()
-    if key is None:
+    key = key.strip()
+    if key is None or len(key) == 0:
         return None
     url = "http://api.ipstack.com/"
-    api = "?access_key=" + key
-    finished_url = url + address.strip() + api
-    with urllib.request.urlopen(finished_url) as url:
-        data = json.loads(url.read().decode())
-    return data
+    url  = url + address.strip() + "?access_key=" + key
+    try:
+        with urllib.request.urlopen(url) as url:
+            data = json.loads(url.read().decode())
+        return data
+    except urllib.error.URLError:
+        print_error("Connection refused: "+url)
+        exit()
 
 
 class Statistics:
